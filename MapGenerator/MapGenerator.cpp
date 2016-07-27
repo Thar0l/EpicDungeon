@@ -119,7 +119,7 @@ void MapGenerator::dbg_Print()
 /**********************************************************************************************************************/
 
 
-void MapGenerator::save(std::string filename)
+void MapGenerator::saveMap(std::string filename)
 {
 	std::ofstream file;
 	file.open(filename, std::ofstream::out);

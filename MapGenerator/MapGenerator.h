@@ -41,7 +41,7 @@ public:
 	void createMap(sf::Vector2i size);
 	void generate();
 	void dbg_Print();
-	void save(std::string filename);
+	void saveMap(std::string filename);
 	~MapGenerator();
 
 private:

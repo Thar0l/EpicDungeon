@@ -4,10 +4,10 @@ int main()
 {
 	srand(time(NULL));
 	MapGenerator mapGenerator;
-	mapGenerator.createMap(sf::Vector2i(8, 12));
+	mapGenerator.createMap(sf::Vector2i(5, 5));
 	mapGenerator.generate();
 	mapGenerator.dbg_Print();
-	mapGenerator.save("map.txt");
+	mapGenerator.saveMap("map.txt");
 	getchar();
 	return 0;
 }

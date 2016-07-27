@@ -11,15 +11,30 @@
 class MapViewer
 {
 private:
-	std::string filename;
-	sf::RenderWindow window;
-	sf::Image image;
-	sf::Texture texture;
-	sf::Sprite sprite;
+	const std::string Path = "Resources\\";
+	const std::string Prefix = "Dungeon Tile ";
+	const std::string TilesetName = "Rooms";
+	const std::string Extension = "txt";
+	const int EmptyTileId = 0;
 
+private:
+	std::string filename;
+	
+	sf::RenderWindow window;
+	std::vector<std::vector<sf::Texture>> textures;
+	std::vector<std::vector<sf::Sprite>> sprites;
+
+	
 	sf::Vector2i size;
+	std::vector<Tile> tileset;
+	std::vector<std::vector<int>> tiles;
 
 public:
 	MapViewer();
+	void loadMap(std::string filename);
 	~MapViewer();
+	void dbg_Print();
+	void Show();
+private:
+	int addTile(int id, int rotation);
 };
