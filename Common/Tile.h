@@ -27,7 +27,7 @@ private:
 
 private:
 	int id;
-	bool pathes[4];
+	int pathes[4];
 	int rotation;
 	sf::Vector2i size;
 /******************************************************************************/
