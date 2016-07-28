@@ -28,12 +28,20 @@ private :
 		Possible = 2
 	};
 
-	const int EmptyTileId = 0;
-	const int NoTileIndx = -1;
+	struct Room
+	{
+		int tile_id;
+		int zone_id;
+	};
+
+	const int EmptyTileId =  0;
+	const int NoTileIndex  = -1;
+	const int EmptyZoneId =  0;
+	const int NoZoneIndex = -1;
 
 	std::vector<Tile> tileset;
 	sf::Vector2i size;
-	std::vector<std::vector<int>> tiles;
+	std::vector<std::vector<Room>> tiles;
 /******************************************************************************/
 
 public:
@@ -50,5 +58,10 @@ private:
 	void genNeighborTiles(sf::Vector2i position);
 	void genTile(sf::Vector2i position);
 	int findTile(int up, int right, int down, int left);
+	int findZones();
+	void clearZones();
+	bool addToZone(sf::Vector2i position, int zone_id);
+	sf::Vector2i findZonesBorder();
+	void deleteZonesBorder(sf::Vector2i position);
 };
 

@@ -48,22 +48,25 @@ void MapGenerator::createMap(sf::Vector2i size)
 	this->size = size;
 	for (unsigned int x = 0; x < size.x; x++)
 	{
-		std::vector<int> line;
+		std::vector<MapGenerator::Room> line;
 		for (unsigned int y = 0; y < size.y; y++)
 		{
-			line.push_back(MapGenerator::NoTileIndx);
+			MapGenerator::Room room;
+			room.tile_id = MapGenerator::NoTileIndex;
+			room.zone_id = MapGenerator::NoZoneIndex;
+			line.push_back(room);
 		}
 		tiles.push_back(line);
 	}
 	for (unsigned int x = 0; x < size.x; x++)
 	{
-		tiles[x][0] = MapGenerator::EmptyTileId;
-		tiles[x][size.y - 1] = MapGenerator::EmptyTileId;
+		tiles[x][0].tile_id = MapGenerator::EmptyTileId;
+		tiles[x][size.y - 1].tile_id = MapGenerator::EmptyTileId;
 	}
 	for (unsigned int y = 0; y < size.y; y++)
 	{	
-		tiles[0][y] = MapGenerator::EmptyTileId;
-		tiles[size.x - 1][y] = MapGenerator::EmptyTileId;
+		tiles[0][y].tile_id = MapGenerator::EmptyTileId;
+		tiles[size.x - 1][y].tile_id = MapGenerator::EmptyTileId;
 	}
 }
 
@@ -74,6 +77,15 @@ void MapGenerator::generate()
 {
 	sf::Vector2i position = genFirstTile();
 	genNeighborTiles(position);
+	while (findZones() > 1)
+	{
+		sf::Vector2i border_tile = findZonesBorder();
+		if (border_tile != sf::Vector2i(0, 0))
+		{
+			deleteZonesBorder(border_tile);
+			clearZones();
+		}
+	}
 }
 
 /**********************************************************************************************************************/
@@ -86,13 +98,13 @@ void MapGenerator::dbg_Print()
 	{
 		for (unsigned int x = 0; x < size.x; x++)
 		{
-			if (tiles[x][y] == MapGenerator::NoTileIndx)
+			if (tiles[x][y].tile_id == MapGenerator::NoTileIndex)
 			{
 				std::cout << "-" << " ";
 			}
 			else
 			{
-				std::cout << tileset[tiles[x][y]].getId() << " ";
+				std::cout << tileset[tiles[x][y].tile_id].getId() << " ";
 			}
 		}
 		std::cout << std::endl;
@@ -100,16 +112,31 @@ void MapGenerator::dbg_Print()
 	std::cout << std::endl << "dbg_map_tiles_rotations:" << std::endl;
 	for (unsigned int y = 0; y < size.y; y++)
 	{
-		std::vector<Tile> line;
 		for (unsigned int x = 0; x < size.x; x++)
 		{
-			if (tiles[x][y] == MapGenerator::NoTileIndx)
+			if (tiles[x][y].tile_id == MapGenerator::NoTileIndex)
 			{
 				std::cout << "-" << " ";
 			}
 			else
 			{
-				std::cout << tileset[tiles[x][y]].getRotation() << " ";
+				std::cout << tileset[tiles[x][y].tile_id].getRotation() << " ";
+			}
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl << "dbg_map_tiles_zones:" << std::endl;
+	for (unsigned int y = 0; y < size.y; y++)
+	{
+		for (unsigned int x = 0; x < size.x; x++)
+		{
+			if (tiles[x][y].zone_id == MapGenerator::NoZoneIndex)
+			{
+				std::cout << "-" << " ";
+			}
+			else
+			{
+				std::cout << tiles[x][y].zone_id << " ";
 			}
 		}
 		std::cout << std::endl;
@@ -124,20 +151,20 @@ void MapGenerator::saveMap(std::string filename)
 	std::ofstream file;
 	file.open(filename, std::ofstream::out);
 	file << size.x << " " << size.y << std::endl;
-	for (unsigned int y = 0; y < size.y; y++)
+	for (unsigned int x = 0; x < size.x; x++)
 	{
-		for (unsigned int x = 0; x < size.x; x++)
+		for (unsigned int y = 0; y < size.y; y++)
 		{
-			file << tileset[tiles[x][y]].getId() << " ";
+			file << tileset[tiles[x][y].tile_id].getId() << " ";
 		}
 		file << std::endl;
 	}
 	file << std::endl;
-	for (unsigned int y = 0; y < size.y; y++)
+	for (unsigned int x = 0; x < size.x; x++)
 	{
-		for (unsigned int x = 0; x < size.x; x++)
+		for (unsigned int y = 0; y < size.y; y++)
 		{
-			file << tileset[tiles[x][y]].getRotation() << " ";
+			file << tileset[tiles[x][y].tile_id].getRotation() << " ";
 		}
 		file << std::endl;
 	}
@@ -157,7 +184,7 @@ MapGenerator::~MapGenerator()
 sf::Vector2i MapGenerator::genFirstTile()
 {
 	sf::Vector2i position = sf::Vector2i((rand() % (size.x - 4) + 2), (rand() % (size.y - 4) + 2));
-	tiles[position.x][position.y] = tileset[rand() % (tileset.size() - 1) + 1].getId();
+	tiles[position.x][position.y].tile_id = tileset[rand() % (tileset.size() - 1) + 1].getId();
 #ifdef DEBUG_MODE
 	std::cout << "Start tile position is (" << position.x << "; " << position.y << ")." << std::endl;
 #endif
@@ -180,20 +207,20 @@ void MapGenerator::genNeighborTiles(sf::Vector2i position)
 
 void MapGenerator::genTile(sf::Vector2i position)
 {
-	if (tiles[position.x][position.y] == MapGenerator::NoTileIndx)
+	if (tiles[position.x][position.y].tile_id == MapGenerator::NoTileIndex)
 	{
 		int up;
 		int right;
 		int down;
 		int left;
 		
-		if (tiles[position.x][position.y-1] == MapGenerator::NoTileIndx)
+		if (tiles[position.x][position.y-1].tile_id == MapGenerator::NoTileIndex)
 		{
 			up = MapGenerator::Way::Possible;
 		} 
 		else
 		{
-			if (tileset[tiles[position.x][position.y-1]].hasDownPath())
+			if (tileset[tiles[position.x][position.y-1].tile_id].hasDownPath())
 			{
 				up = MapGenerator::Way::Exist;
 			}
@@ -203,13 +230,13 @@ void MapGenerator::genTile(sf::Vector2i position)
 			}
 		}
 
-		if (tiles[position.x + 1][position.y] == MapGenerator::NoTileIndx)
+		if (tiles[position.x + 1][position.y].tile_id == MapGenerator::NoTileIndex)
 		{
 			right = MapGenerator::Way::Possible;
 		}
 		else
 		{
-			if (tileset[tiles[position.x + 1][position.y]].hasLeftPath())
+			if (tileset[tiles[position.x + 1][position.y].tile_id].hasLeftPath())
 			{
 				right = MapGenerator::Way::Exist;
 			}
@@ -219,13 +246,13 @@ void MapGenerator::genTile(sf::Vector2i position)
 			}
 		}
 
-		if (tiles[position.x][position.y + 1] == MapGenerator::NoTileIndx)
+		if (tiles[position.x][position.y + 1].tile_id == MapGenerator::NoTileIndex)
 		{
 			down = MapGenerator::Way::Possible;
 		}
 		else
 		{
-			if (tileset[tiles[position.x][position.y + 1]].hasUpPath())
+			if (tileset[tiles[position.x][position.y + 1].tile_id].hasUpPath())
 			{
 				down = MapGenerator::Way::Exist;
 			}
@@ -235,13 +262,13 @@ void MapGenerator::genTile(sf::Vector2i position)
 			}
 		}
 
-		if (tiles[position.x - 1][position.y] == MapGenerator::NoTileIndx)
+		if (tiles[position.x - 1][position.y].tile_id == MapGenerator::NoTileIndex)
 		{
 			left = MapGenerator::Way::Possible;
 		}
 		else
 		{
-			if (tileset[tiles[position.x - 1][position.y]].hasRightPath())
+			if (tileset[tiles[position.x - 1][position.y].tile_id].hasRightPath())
 			{
 				left = MapGenerator::Way::Exist;
 			}
@@ -254,7 +281,7 @@ void MapGenerator::genTile(sf::Vector2i position)
 		std::cout << "Finding tile for place (" << position.x << "; " << position.y << ")." << std::endl;
 		std::cout << "Params is: " << up << " " << right << " " << down << " " << left << "." << std::endl;
 #endif
-		tiles[position.x][position.y] = findTile(up, right, down, left);
+		tiles[position.x][position.y].tile_id = findTile(up, right, down, left);
 #ifdef DEBUG_MODE
 		std::cout << "Found " << tileset[tiles[position.x][position.y]].getId() << " tile with rotation ";
 		std::cout << tileset[tiles[position.x][position.y]].getRotation() << "." << std::endl;
@@ -306,3 +333,184 @@ int MapGenerator::findTile(int up, int right, int down, int left)
 		return possibleTiles[rand() % possibleTiles.size()];
 	}
 }
+
+/**********************************************************************************************************************/
+
+
+int MapGenerator::findZones()
+{
+	int zone_id = MapGenerator::EmptyZoneId + 1;
+	for (unsigned int x = 0; x < size.x; x++)
+	{
+		for (unsigned int y = 0; y < size.y; y++)
+		{
+			if (tiles[x][y].tile_id == EmptyTileId)
+			{
+				tiles[x][y].zone_id = MapGenerator::EmptyZoneId;
+			}
+			else if (addToZone(sf::Vector2i(x, y), zone_id))
+			{
+				zone_id++;
+			}
+		}
+	}
+	return zone_id;
+}
+
+/**********************************************************************************************************************/
+
+bool MapGenerator::addToZone(sf::Vector2i position, int zone_id)
+{
+	if (tiles[position.x][position.y].zone_id == MapGenerator::NoZoneIndex)
+	{
+		tiles[position.x][position.y].zone_id = zone_id;
+		if ((position.x > 0) && (tileset[tiles[position.x][position.y].tile_id].hasLeftPath()))
+		{
+			addToZone(sf::Vector2i(position.x - 1, position.y), zone_id);
+		}
+		if ((position.x < (size.x - 1)) && (tileset[tiles[position.x][position.y].tile_id].hasRightPath()))
+		{
+			addToZone(sf::Vector2i(position.x + 1, position.y), zone_id);
+		}
+		if ((position.y > 0) && (tileset[tiles[position.x][position.y].tile_id].hasUpPath()))
+		{
+			addToZone(sf::Vector2i(position.x, position.y - 1), zone_id);
+		}
+		if ((position.y < (size.y - 1)) && (tileset[tiles[position.x][position.y].tile_id].hasDownPath()))
+		{
+			addToZone(sf::Vector2i(position.x, position.y + 1), zone_id);
+		}
+		return true;
+	}
+	return false;
+}
+
+/**********************************************************************************************************************/
+
+
+void MapGenerator::clearZones()
+{
+	for (unsigned int x = 0; x < size.x; x++)
+	{
+		for (unsigned int y = 0; y < size.y; y++)
+		{
+			tiles[x][y].zone_id = MapGenerator::NoZoneIndex;
+		}
+	}
+}
+
+/**********************************************************************************************************************/
+
+
+sf::Vector2i MapGenerator::findZonesBorder()
+{
+	for (unsigned int x = 1; x < size.x - 1; x++)
+	{
+		for (unsigned int y = 1; y < size.y - 1; y++)
+		{
+			if (tiles[x][y].zone_id != tiles[x - 1][y].zone_id)
+			{
+				if (tiles[x - 1][y].zone_id != MapGenerator::EmptyZoneId)
+				{
+					return sf::Vector2i(x, y);
+				}
+			}
+			if (tiles[x][y].zone_id != tiles[x + 1][y].zone_id)
+			{
+				if (tiles[x + 1][y].zone_id != MapGenerator::EmptyZoneId)
+				{
+					return sf::Vector2i(x, y);
+				}
+			}
+			if (tiles[x][y].zone_id != tiles[x][y - 1].zone_id)
+			{
+				if (tiles[x][y - 1].zone_id != MapGenerator::EmptyZoneId)
+				{
+					return sf::Vector2i(x, y);
+				}
+			}
+			if (tiles[x][y].zone_id != tiles[x][y + 1].zone_id)
+			{
+				if (tiles[x][y + 1].zone_id != MapGenerator::EmptyZoneId)
+				{
+					return sf::Vector2i(x, y);
+				}
+			}
+		}
+	}
+	return sf::Vector2i(0, 0);
+}
+
+/**********************************************************************************************************************/
+
+
+void MapGenerator::deleteZonesBorder(sf::Vector2i position)
+{
+	if (tiles[position.x][position.y].zone_id != tiles[position.x - 1][position.y].zone_id)
+	{
+		if (tiles[position.x - 1][position.y].zone_id != MapGenerator::EmptyZoneId)
+		{
+			int up = tileset[tiles[position.x][position.y].tile_id].hasUpPath();
+			int right = tileset[tiles[position.x][position.y].tile_id].hasRightPath();
+			int down = tileset[tiles[position.x][position.y].tile_id].hasDownPath();
+			int left = MapGenerator::Way::Exist;
+			tiles[position.x][position.y].tile_id = findTile(up, right, down, left);
+			up = tileset[tiles[position.x - 1][position.y].tile_id].hasUpPath();
+			right = MapGenerator::Way::Exist;
+			down = tileset[tiles[position.x - 1][position.y].tile_id].hasDownPath();
+			left = tileset[tiles[position.x - 1][position.y].tile_id].hasLeftPath();
+			tiles[position.x - 1][position.y].tile_id = findTile(up, right, down, left);
+		}
+	}
+	if (tiles[position.x][position.y].zone_id != tiles[position.x + 1][position.y].zone_id)
+	{
+		if (tiles[position.x + 1][position.y].zone_id != MapGenerator::EmptyZoneId)
+		{
+			int up = tileset[tiles[position.x][position.y].tile_id].hasUpPath();
+			int right = MapGenerator::Way::Exist;
+			int down = tileset[tiles[position.x][position.y].tile_id].hasDownPath();
+			int left = tileset[tiles[position.x][position.y].tile_id].hasLeftPath();
+			tiles[position.x][position.y].tile_id = findTile(up, right, down, left);
+			up = tileset[tiles[position.x + 1][position.y].tile_id].hasUpPath();
+			right = tileset[tiles[position.x + 1][position.y].tile_id].hasRightPath();
+			down = tileset[tiles[position.x + 1][position.y].tile_id].hasDownPath();
+			left = MapGenerator::Way::Exist;
+			tiles[position.x + 1][position.y].tile_id = findTile(up, right, down, left);
+		}
+	}
+	if (tiles[position.x][position.y].zone_id != tiles[position.x][position.y - 1].zone_id)
+	{
+		if (tiles[position.x][position.y - 1].zone_id != MapGenerator::EmptyZoneId)
+		{
+			int up = MapGenerator::Way::Exist;
+			int right = tileset[tiles[position.x][position.y].tile_id].hasRightPath();
+			int down = tileset[tiles[position.x][position.y].tile_id].hasDownPath();
+			int left = tileset[tiles[position.x][position.y].tile_id].hasLeftPath();
+			tiles[position.x][position.y].tile_id = findTile(up, right, down, left);
+			up = tileset[tiles[position.x][position.y - 1].tile_id].hasUpPath();
+			right = tileset[tiles[position.x][position.y - 1].tile_id].hasRightPath();
+			down = MapGenerator::Way::Exist;
+			left = tileset[tiles[position.x][position.y - 1].tile_id].hasLeftPath();
+			tiles[position.x][position.y - 1].tile_id = findTile(up, right, down, left);
+		}
+	}
+	if (tiles[position.x][position.y].zone_id != tiles[position.x][position.y + 1].zone_id)
+	{
+		if (tiles[position.x][position.y + 1].zone_id != MapGenerator::EmptyZoneId)
+		{
+			int up = tileset[tiles[position.x][position.y].tile_id].hasUpPath();
+			int right = tileset[tiles[position.x][position.y].tile_id].hasRightPath();
+			int down = MapGenerator::Way::Exist;
+			int left = tileset[tiles[position.x][position.y].tile_id].hasLeftPath();
+			tiles[position.x][position.y].tile_id = findTile(up, right, down, left);
+			up = MapGenerator::Way::Exist;
+			right = tileset[tiles[position.x][position.y + 1].tile_id].hasRightPath();
+			down = tileset[tiles[position.x][position.y + 1].tile_id].hasDownPath();
+			left = tileset[tiles[position.x][position.y + 1].tile_id].hasLeftPath();
+			tiles[position.x][position.y + 1].tile_id = findTile(up, right, down, left);
+		}
+	}
+}
+
+/**********************************************************************************************************************/
+/**********************************************************************************************************************/

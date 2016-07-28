@@ -4,10 +4,22 @@ int main()
 {
 	srand(time(NULL));
 	MapGenerator mapGenerator;
-	mapGenerator.createMap(sf::Vector2i(5, 5));
+	sf::Vector2i size;
+	std::cout << "Enter map size.x: ";
+	std::cin >> size.x;
+	std::cout << "Enter map size.y: ";
+	std::cin >> size.y;
+	mapGenerator.createMap(size);
 	mapGenerator.generate();
 	mapGenerator.dbg_Print();
 	mapGenerator.saveMap("map.txt");
-	getchar();
+	std::cout << "Show map (y/n)?" << std::endl;
+	char answer;
+	std::cin >> answer;
+	if (answer == 'y')
+	{
+		system("MapViewer.exe");
+	}
+	//system("pause");
 	return 0;
 }
