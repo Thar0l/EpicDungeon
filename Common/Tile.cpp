@@ -38,7 +38,7 @@ Tile& Tile::operator=(const Tile& tile)
 
 bool Tile::hasUpPath()
 {
-	return pathes[(Tile::Pathes::Count + Tile::Pathes::Up - rotation) % Tile::Pathes::Count];
+	return (pathes[(Tile::Pathes::Count + Tile::Pathes::Up - rotation) % Tile::Pathes::Count] != 0);
 }
 
 /**********************************************************************************************************************/
@@ -46,7 +46,7 @@ bool Tile::hasUpPath()
 
 bool Tile::hasRightPath()
 {
-	return pathes[(Tile::Pathes::Count + Tile::Pathes::Right - rotation) % Tile::Pathes::Count];
+	return (pathes[(Tile::Pathes::Count + Tile::Pathes::Right - rotation) % Tile::Pathes::Count] != 0);
 }
 
 /**********************************************************************************************************************/
@@ -54,13 +54,44 @@ bool Tile::hasRightPath()
 
 bool Tile::hasDownPath()
 {
-	return pathes[(Tile::Pathes::Count + Tile::Pathes::Down - rotation) % Tile::Pathes::Count];
+	return (pathes[(Tile::Pathes::Count + Tile::Pathes::Down - rotation) % Tile::Pathes::Count] != 0);
 }
 
 /**********************************************************************************************************************/
 
 
 bool Tile::hasLeftPath()
+{
+	return (pathes[(Tile::Pathes::Count + Tile::Pathes::Left - rotation) % Tile::Pathes::Count] != 0);
+}
+
+/**********************************************************************************************************************/
+
+int Tile::getUpPath()
+{
+	return pathes[(Tile::Pathes::Count + Tile::Pathes::Up - rotation) % Tile::Pathes::Count];
+}
+
+/**********************************************************************************************************************/
+
+
+int Tile::getRightPath()
+{
+	return pathes[(Tile::Pathes::Count + Tile::Pathes::Right - rotation) % Tile::Pathes::Count];
+}
+
+/**********************************************************************************************************************/
+
+
+int Tile::getDownPath()
+{
+	return pathes[(Tile::Pathes::Count + Tile::Pathes::Down - rotation) % Tile::Pathes::Count];
+}
+
+/**********************************************************************************************************************/
+
+
+int Tile::getLeftPath()
 {
 	return pathes[(Tile::Pathes::Count + Tile::Pathes::Left - rotation) % Tile::Pathes::Count];
 }

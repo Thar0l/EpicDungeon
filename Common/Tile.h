@@ -40,6 +40,10 @@ public:
 	bool hasRightPath();
 	bool hasDownPath();
 	bool hasLeftPath();
+	int getUpPath();
+	int getRightPath();
+	int getDownPath();
+	int getLeftPath();
 	sf::Vector2i getSize();
 	int getId();
 	int getRotation();
