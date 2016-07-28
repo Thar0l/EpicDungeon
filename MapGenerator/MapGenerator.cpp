@@ -183,8 +183,8 @@ MapGenerator::~MapGenerator()
 
 sf::Vector2i MapGenerator::genFirstTile()
 {
-	sf::Vector2i position = sf::Vector2i((rand() % (size.x - 4) + 2), (rand() % (size.y - 4) + 2));
-	tiles[position.x][position.y].tile_id = tileset[rand() % (tileset.size() - 1) + 1].getId();
+	sf::Vector2i position = sf::Vector2i((rand() % (size.x - 2) + 1), (rand() % (size.y - 2) + 1));
+	genTile(position);
 #ifdef DEBUG_MODE
 	std::cout << "Start tile position is (" << position.x << "; " << position.y << ")." << std::endl;
 #endif
