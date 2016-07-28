@@ -5,6 +5,8 @@
 MapViewer::MapViewer()
 {
 	window.create(sf::VideoMode(1920, 1080), "MapViewer");
+	zoom = 2.0f;
+	mapPosition = sf::Vector2f(0.0, 0.0);
 }
 
 /**********************************************************************************************************************/
@@ -15,25 +17,21 @@ void MapViewer::loadMap(std::string filename)
 	std::ifstream file;
 	file.open(filename, std::ifstream::in);
 	file >> size.x >> size.y;
-	//std::cout << size.x << "" << size.y << std::endl;
-
 	for (unsigned int x = 0; x < size.x; x++)
 	{
 		std::vector<int> line;
-		std::vector<sf::Texture> textures_line;
 		std::vector<sf::Sprite> sprites_line;
 		for (unsigned int y = 0; y < size.y; y++)
 		{
-			sf::Texture texture;
 			sf::Sprite sprite;
 			line.push_back(MapViewer::EmptyTileId);
-			textures_line.push_back(texture);
 			sprites_line.push_back(sprite);
 		}
 		tiles.push_back(line);
-		textures.push_back(textures_line);
 		sprites.push_back(sprites_line);
 	}
+
+	loadTileset();
 
 	for (unsigned int x = 0; x < size.x; x++)
 	{
@@ -48,12 +46,10 @@ void MapViewer::loadMap(std::string filename)
 		{
 			int rotation;
 			file >> rotation;
-			tiles[x][y] = addTile(tiles[x][y], rotation);
-			textures[x][y].loadFromFile(MapViewer::Path + MapViewer::Prefix + std::to_string(tileset[tiles[x][y]].getId()) + ".jpg");
-			sprites[x][y].setTexture(textures[x][y]);
+			sprites[x][y].setTexture(textures[tiles[x][y]]);
 			sprites[x][y].setPosition(1200 * x, 1200 * y);
 			sprites[x][y].setOrigin(600, 600);
-			sprites[x][y].setRotation(90 * tileset[tiles[x][y]].getRotation());
+			sprites[x][y].setRotation(90 * rotation);
 		}
 	}
 	file.close();
@@ -98,7 +94,7 @@ void MapViewer::dbg_Print()
 void MapViewer::Show()
 {
 	sf::View view = window.getDefaultView();
-	view.zoom(20.0f);
+	view.zoom(zoom);
 	window.setView(view);
 	while (window.isOpen())
 	{
@@ -109,6 +105,105 @@ void MapViewer::Show()
 			{
 				window.close();
 			}
+			if (event.type == sf::Event::MouseWheelMoved)
+			{
+				zoom += (float)(event.mouseWheel.delta);
+				if (zoom < 1.0)
+				{
+					zoom = 1.0;
+				}
+				if (zoom > 25.0)
+				{
+					zoom = 25.0;
+				}
+				sf::View view = window.getDefaultView();
+				view.move(mapPosition);
+				view.zoom(zoom);
+				window.setView(view);
+			}
+
+			if (event.type == sf::Event::KeyPressed)
+			{
+				if (event.key.code == sf::Keyboard::R)
+				{
+					sf::View view = window.getDefaultView();
+					mapPosition = sf::Vector2f(0.0, 0.0);
+					zoom = 2.0f;
+					view.move(mapPosition);
+					view.zoom(zoom);
+					window.setView(view);
+				}
+				if (event.key.code == sf::Keyboard::Up)
+				{
+					sf::View view = window.getDefaultView();
+					mapPosition.y -= 100;
+					view.move(mapPosition);
+					view.zoom(zoom);
+					window.setView(view);
+				}
+				if (event.key.code == sf::Keyboard::Down)
+				{
+					sf::View view = window.getDefaultView();
+					mapPosition.y += 100;
+					view.move(mapPosition);
+					view.zoom(zoom);
+					window.setView(view);
+				}
+				if (event.key.code == sf::Keyboard::Left)
+				{
+					sf::View view = window.getDefaultView();
+					mapPosition.x -= 100;
+					view.move(mapPosition);
+					view.zoom(zoom);
+					window.setView(view);
+				}
+				if (event.key.code == sf::Keyboard::Right)
+				{
+					sf::View view = window.getDefaultView();
+					mapPosition.x += 100;
+					view.move(mapPosition);
+					view.zoom(zoom);
+					window.setView(view);
+				}
+			}
+			if (event.type == sf::Event::MouseButtonPressed)
+			{
+				if (event.mouseButton.button == sf::Mouse::Button::Left)
+				{
+					mousePosition.x = sf::Mouse::getPosition(window).x;
+					mousePosition.y = sf::Mouse::getPosition(window).y;
+				}
+			}
+
+			if (event.type == sf::Event::MouseMoved)
+			{
+				if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
+				{
+					sf::Vector2f position;
+					position.x = mousePosition.x - sf::Mouse::getPosition(window).x;
+					position.y = mousePosition.y - sf::Mouse::getPosition(window).y;
+					sf::View view = window.getDefaultView();
+					view.move(mapPosition.x + zoom *position.x, mapPosition.y + zoom * position.y);
+					view.zoom(zoom);
+					window.setView(view);
+				}
+			}
+
+			if (event.type == sf::Event::MouseButtonReleased)
+			{
+				if (event.mouseButton.button == sf::Mouse::Button::Left)
+				{
+					mousePosition.x = mousePosition.x - sf::Mouse::getPosition(window).x;
+					mousePosition.y = mousePosition.y - sf::Mouse::getPosition(window).y;
+					sf::View view = window.getDefaultView();
+					mapPosition.x += zoom * mousePosition.x;
+					mapPosition.y += zoom * mousePosition.y;
+					view.move(mapPosition);
+					view.zoom(zoom);
+					window.setView(view);
+				}
+			}
+
 		}
 		window.clear();
 		for (unsigned int y = 0; y < size.y; y++)
@@ -130,4 +225,28 @@ int MapViewer::addTile(int id, int rotation)
 	Tile tile(id, rotation);
 	tileset.push_back(tile);
 	return tileset.size() - 1;
+}
+
+void MapViewer::loadTileset()
+{
+	int tiles_count;
+	std::ifstream file;
+	file.open(MapViewer::Path + MapViewer::TilesetName + "." + MapViewer::Extension, std::ifstream::in);
+	if (file.fail())
+	{
+		std::cout << "No resources found!" << std::endl;
+		system("pause");
+		exit(-1);
+	}
+	file >> tiles_count;
+	for (unsigned int tile_id = 0; tile_id < tiles_count; tile_id++)
+	{
+
+		Tile tile(tile_id, 0);
+		tileset.push_back(tile);
+		sf::Texture texture;
+		texture.loadFromFile(MapViewer::Path + MapViewer::Prefix + std::to_string(tile_id) + ".jpg");
+		textures.push_back(texture);
+	}
+	file.close();
 }

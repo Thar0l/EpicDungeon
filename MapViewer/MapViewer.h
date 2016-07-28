@@ -21,13 +21,17 @@ private:
 	std::string filename;
 	
 	sf::RenderWindow window;
-	std::vector<std::vector<sf::Texture>> textures;
+	std::vector<sf::Texture> textures;
 	std::vector<std::vector<sf::Sprite>> sprites;
 
 	
 	sf::Vector2i size;
 	std::vector<Tile> tileset;
 	std::vector<std::vector<int>> tiles;
+
+	float zoom;
+	sf::Vector2f mapPosition;
+	sf::Vector2f mousePosition;
 
 public:
 	MapViewer();
@@ -37,4 +41,5 @@ public:
 	void Show();
 private:
 	int addTile(int id, int rotation);
+	void loadTileset();
 };
