@@ -36,10 +36,12 @@ public:
 	Tile(int id);
 	Tile(int id, int rotation);
 	Tile& operator=(const Tile& tile);
+	
 	bool hasUpPath();
 	bool hasRightPath();
 	bool hasDownPath();
 	bool hasLeftPath();
+	
 	int getUpPath();
 	int getRightPath();
 	int getDownPath();

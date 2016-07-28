@@ -24,8 +24,8 @@ private :
 	enum Way
 	{
 		Absent = 0,
-		Exist = 1,
-		Possible = 2
+		Possible = 256,
+		Exist = 12
 	};
 
 	struct Room
